@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EazyVenue - Modern Booking Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link rel="stylesheet" href="/static/styles.css">
+<script src="/static/script.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1> EazyVenue</h1>
+                <p>Modern Venue Booking & Management System</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="headerTotalVenues">0</span>
+                    <span class="stat-label">Venues</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="headerTotalBookings">0</span>
+                    <span class="stat-label">Bookings</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tab active" onclick="showTab('user')">
+                <div class="tab-icon">🔍</div>
+                <div class="tab-text">Book Venue</div>
+            </div>
+            <div class="tab" onclick="showTab('admin')">
+                <div class="tab-icon">⚙️</div>
+                <div class="tab-text">Admin Panel</div>
+            </div>
+            <div class="tab" onclick="showTab('analytics')">
+                <div class="tab-icon">📊</div>
+                <div class="tab-text">Analytics</div>
+            </div>
+        </div>
+        
+        <!-- User Tab -->
+        <div id="user" class="tab-content active">
+            <div class="section-header">
+                <h2>Available Venues</h2>
+                <div class="search-filter">
+                    <input type="text" id="venueSearch" placeholder="Search venues..." class="search-input">
+                    <select id="capacityFilter" class="filter-select">
+                        <option value="">All Capacities</option>
+                        <option value="small">Small (1-50)</option>
+                        <option value="medium">Medium (51-200)</option>
+                        <option value="large">Large (200+)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="userVenues" class="venue-grid"></div>
+            
+            <!-- Booking Modal -->
+            <div id="bookingModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Book Venue</h3>
+                        <button class="close-btn" onclick="closeBookingModal()">×</button>
+                    </div>
+                    <div id="bookingForm" class="modal-body">
+                        <div class="form-group">
+                            <label>Your Name</label>
+                            <input type="text" id="userName" placeholder="Enter your name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="userEmail" placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>Select Date</label>
+                            <input type="date" id="bookingDate">
+                        </div>
+                        <div class="calendar-container">
+                            <h4>Availability Calendar</h4>
+                            <div class="calendar-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color available"></div>
+                                    <span>Available</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color booked"></div>
+                                    <span>Booked</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color blocked"></div>
+                                    <span>Blocked</span>
+                                </div>
+                            </div>
+                            <div class="calendar-grid" id="availabilityCalendar"></div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn-primary" onclick="confirmBooking()">Book Now</button>
+                            <button class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Tab -->
+        <div id="admin" class="tab-content">
+            <div class="section-header">
+                <h2>Admin Panel</h2>
+            </div>
+            
+            <div class="admin-grid">
+                <div class="admin-section">
+                    <div class="section-card">
+                        <h3>Add New Venue</h3>
+                        <form id="venueForm">
+                            <div class="form-group">
+                                <label>Venue Name</label>
+                                <input type="text" id="venueName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Location</label>
+                                <input type="text" id="venueLocation" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Capacity</label>
+                                <input type="number" id="venueCapacity" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Price per Day ($)</label>
+                                <input type="number" id="venuePrice" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="venueDescription" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Amenities</label>
+                                <input type="text" id="venueAmenities" placeholder="WiFi, Parking, AC">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Venue</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="admin-section">
+                    <div class="section-card">
+                        <h3>Manage Venues</h3>
+                        <div id="adminVenues"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h3>Recent Bookings</h3>
+                <div id="recentBookings" class="bookings-grid"></div>
+            </div>
+        </div>
+        
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="section-header">
+                <h2>Analytics Dashboard</h2>
+                <div class="analytics-period">
+                    <select id="analyticsPeriod" class="filter-select">
+                        <option value="week">Last Week</option>
+                        <option value="month" selected>Last Month</option>
+                        <option value="year">Last Year</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="analytics-grid" id="analyticsCards"></div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Booking Trends</h3>
+                    <canvas id="bookingChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Revenue Distribution</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="analytics-details">
+                <div class="detail-card">
+                    <h3>Top Performers</h3>
+                    <div id="topPerformers"></div>
+                </div>
+                <div class="detail-card">
+                    <h3>Recent Activity</h3>
+                    <div id="recentActivity"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="alerts"></div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

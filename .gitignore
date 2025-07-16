@@ -44,8 +44,6 @@ coverage.xml
 .vscode/
 
 # Static & media files (if generated dynamically)
-static/
-media/
 
 # SQLite DBs (optional)
 *.sqlite3
