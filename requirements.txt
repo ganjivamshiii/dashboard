@@ -1,7 +1,5 @@
 fastapi
 uvicorn
 sqlalchemy
+pydantic
 python-multipart
-aiofiles
-jinja2
-pydantic==1.10.14
