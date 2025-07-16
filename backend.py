@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 import os
 import uvicorn
 from fastapi.staticfiles import StaticFiles
+from pydantic import ConfigDict
 
 app = FastAPI(title="EazyVenue Booking API")
 
@@ -66,23 +67,18 @@ class VenueCreate(BaseModel):
 
 class Venue(VenueCreate):
     id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class BookingCreate(BaseModel):
     venue_id: int
     booking_date: date
     user_name: str = Field(..., min_length=1)
-    user_email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    user_email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
 
 class Booking(BookingCreate):
     id: int
     status: str
-
-    class Config:
-        orm_mode = True  # ✅ this is the required fix
-
+    model_config = ConfigDict(from_attributes=True)
 
 class BlockDate(BaseModel):
     venue_id: int
@@ -91,7 +87,7 @@ class BlockDate(BaseModel):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # or specific frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,9 +100,32 @@ def get_db():
     finally:
         db.close()
 
+# Helper function to convert SQLAlchemy objects to Pydantic models
+def convert_to_venue(venue_db: VenueDB) -> Venue:
+    return Venue(
+        id=venue_db.id,
+        name=venue_db.name,
+        location=venue_db.location,
+        capacity=venue_db.capacity,
+        price_per_day=venue_db.price_per_day,
+        description=venue_db.description or "",
+        amenities=venue_db.amenities or ""
+    )
+
+def convert_to_booking(booking_db: BookingDB) -> Booking:
+    return Booking(
+        id=booking_db.id,
+        venue_id=booking_db.venue_id,
+        booking_date=booking_db.booking_date,
+        user_name=booking_db.user_name,
+        user_email=booking_db.user_email,
+        status=booking_db.status
+    )
+
 @app.get("/venues", response_model=List[Venue])
 async def get_venues(db: Session = Depends(get_db)):
-    return db.query(VenueDB).all()
+    venues_db = db.query(VenueDB).all()
+    return [convert_to_venue(venue) for venue in venues_db]
 
 @app.post("/venues", response_model=Venue)
 async def create_venue(venue: VenueCreate, db: Session = Depends(get_db)):
@@ -114,7 +133,7 @@ async def create_venue(venue: VenueCreate, db: Session = Depends(get_db)):
     db.add(db_venue)
     db.commit()
     db.refresh(db_venue)
-    return db_venue
+    return convert_to_venue(db_venue)
 
 @app.get("/venues/{venue_id}/availability")
 async def get_venue_availability(venue_id: int, db: Session = Depends(get_db)):
@@ -155,11 +174,12 @@ async def book_venue(booking: BookingCreate, db: Session = Depends(get_db)):
     db.add(db_booking)
     db.commit()
     db.refresh(db_booking)
-    return db_booking
+    return convert_to_booking(db_booking)
 
 @app.get("/bookings", response_model=List[Booking])
 async def get_bookings(db: Session = Depends(get_db)):
-    return db.query(BookingDB).all()
+    bookings_db = db.query(BookingDB).all()
+    return [convert_to_booking(booking) for booking in bookings_db]
 
 @app.post("/block-date")
 async def block_date(block_date: BlockDate, db: Session = Depends(get_db)):
@@ -222,12 +242,9 @@ async def get_analytics(db: Session = Depends(get_db)):
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now()}
 
-from fastapi.responses import FileResponse
-
 @app.get("/")
 def serve_index():
     return FileResponse("static/index.html")
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
