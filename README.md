@@ -1,5 +1,16 @@
 # Dashboard
 # EazyVenue Booking API
+# i observe the performance lag in eazyvenue , as per my backend knowledge  i would suggest 
+1. Simplify venue listings: 
+ -Categorize cards into premium ,luxury , low level with a tag.
+ - cards are more in main page , use location wise.
+ -I think Ui needs to be better.
+ - Add people reviews on main page about Eazy venue how it solve people issues.
+-website loading slow , i think please check.
+2. Enhance footer.
+3.To ensure fast data retrieval and processing, we should optimize DB queries, add proper indexing, use caching (like Redis), and implement connection pooling. (for E-commerce use mysql/ sqlite)
+Also, limiting large data loads with pagination and keeping the schema clean and efficient will greatly reduce response time and improve system performance.
+4.Use CDN for frontend
 
 A FastAPI-based venue booking management system that allows users to book venues, manage availability, and view analytics.
 
